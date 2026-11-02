@@ -1,10 +1,16 @@
  
-import sys
-import urllib.request
-import urllib.error
+import sys # Accesso al modulo sys https://docs.python.org/3/library/sys.html
+import urllib.request # Per operare con URL 'import urllib.'
+import urllib.error # per la gestione di eventuali errori 
  
-# Metodi da testare (come richiesto dalla traccia: GET, POST, PUT, DELETE;
-# aggiungiamo HEAD, OPTIONS e PATCH per completezza)
+# Metodi HTTP : GET, POST, PUT, DELETE
+# aggiungiamo HEAD, OPTIONS e PATCH per completezza
+#GET - recupera dati 
+#POST - invia o crea dati 
+#PUT - sostituisce 
+#DELETE - elimina 
+#HEAD - recupera esclusivamente le intestazioni della risposta 
+#OPTION - indica quali metodi supporta il server 
 METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH"]
  
 # Codici che indicano che il metodo NON è abilitato
