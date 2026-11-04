@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulazione phishing - vista Gmail e rischi</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#ffffff; --ink:#202124; --muted:#5f6368; --line:#e3e5e8;
+    --blue:#1a73e8; --blue-ink:#174ea6; --red:#c5221f; --red-bg:#fce8e6;
+    --amber:#b06000; --amber-bg:#fef7e0; --green:#188038; --green-bg:#e6f4ea;
+    --chip:#f1f3f4; --shadow:0 1px 3px rgba(60,64,67,.25),0 4px 12px rgba(60,64,67,.12);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#17191c; --panel:#202124; --ink:#e8eaed; --muted:#9aa0a6; --line:#3c4043;
+      --blue:#8ab4f8; --blue-ink:#aecbfa; --red:#f28b82; --red-bg:#3a2321;
+      --amber:#fdd663; --amber-bg:#3a2f16; --green:#81c995; --green-bg:#1e3326;
+      --chip:#2a2d31; --shadow:0 1px 3px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+      --bg:#17191c; --panel:#202124; --ink:#e8eaed; --muted:#9aa0a6; --line:#3c4043;
+      --blue:#8ab4f8; --blue-ink:#aecbfa; --red:#f28b82; --red-bg:#3a2321;
+      --amber:#fdd663; --amber-bg:#3a2f16; --green:#81c995; --green-bg:#1e3326;
+      --chip:#2a2d31; --shadow:0 1px 3px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:16px}
+  /* ---- simulation banner ---- */
+  .sim{position:sticky;top:0;z-index:20;background:repeating-linear-gradient(45deg,#c5221f,#c5221f 14px,#a01713 14px,#a01713 28px);
+    color:#fff;padding:10px 16px;border-radius:10px;box-shadow:var(--shadow);
+    display:flex;gap:10px;align-items:center;font-weight:700;font-size:14px;margin-bottom:16px}
+  .sim small{display:block;font-weight:500;opacity:.95;font-size:12px;margin-top:2px}
+  .sim .ic{font-size:20px;line-height:1}
+  /* ---- gmail client chrome ---- */
+  .client{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .topbar{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line)}
+  .logo{display:flex;align-items:center;gap:8px;font-size:20px;color:var(--muted);font-weight:500}
+  .logo svg{display:block}
+  .search{flex:1;background:var(--chip);border-radius:8px;height:34px;display:flex;align-items:center;
+    padding:0 12px;color:var(--muted);font-size:13px;min-width:0}
+  .avatar{width:30px;height:30px;border-radius:50%;background:#8e24aa;color:#fff;display:flex;
+    align-items:center;justify-content:center;font-weight:600;flex:0 0 auto}
+  /* ---- message ---- */
+  .subject{display:flex;align-items:center;gap:10px;padding:16px 20px 4px;font-size:20px;font-weight:400}
+  .badge-spam{font-size:11px;font-weight:700;color:var(--red);background:var(--red-bg);
+    padding:3px 8px;border-radius:20px;white-space:nowrap}
+  .from{display:flex;gap:12px;padding:10px 20px 6px;align-items:flex-start}
+  .from .g{width:40px;height:40px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;
+    justify-content:center;flex:0 0 auto}
+  .from .meta{min-width:0}
+  .from .name{font-weight:600}
+  .from .addr{color:var(--muted);font-size:13px;word-break:break-all}
+  .from .to{color:var(--muted);font-size:12px;margin-top:2px}
+  .flag{position:relative;display:inline-block;border-bottom:2px dotted var(--red);cursor:help}
+  .flag .tip{visibility:hidden;opacity:0;transition:.15s;position:absolute;left:0;top:125%;z-index:5;
+    background:var(--red);color:#fff;font-size:12px;font-weight:600;padding:6px 9px;border-radius:7px;
+    width:max-content;max-width:270px;box-shadow:var(--shadow)}
+  .flag:hover .tip,.flag:focus .tip{visibility:visible;opacity:1}
+  .body{padding:8px 20px 20px;font-size:14.5px}
+  .body p{margin:0 0 12px}
+  .cta{display:inline-block;background:var(--blue);color:#fff !important;text-decoration:none;
+    font-weight:600;padding:12px 22px;border-radius:8px;margin:6px 0 4px}
+  .urlbar{font-size:12px;color:var(--muted);margin-top:8px;background:var(--chip);
+    border-radius:6px;padding:7px 10px;font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+  .urlbar b{color:var(--red)}
+  .sig{color:var(--muted);font-size:13px}
+  .fine{color:var(--muted);font-size:12px;border-top:1px solid var(--line);margin-top:14px;padding-top:10px}
+  /* ---- annotations strip ---- */
+  h2{font-size:17px;margin:26px 0 4px}
+  .lead{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  .flags{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:0 0 8px}
+  .fcard{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--red);
+    border-radius:10px;padding:10px 12px;font-size:13px}
+  .fcard b{display:block;margin-bottom:2px}
+  .fcard.y{border-left-color:var(--amber)}
+  /* ---- risk flow ---- */
+  .flow{display:flex;flex-direction:column;gap:0;margin:6px 0}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;
+    display:flex;gap:14px;box-shadow:var(--shadow)}
+  .step .n{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--red);color:#fff;
+    font-weight:700;display:flex;align-items:center;justify-content:center}
+  .step h3{margin:0 0 4px;font-size:15px}
+  .step p{margin:0;font-size:13.5px;color:var(--ink)}
+  .step .risk{margin-top:7px;font-size:12.5px;color:var(--red);background:var(--red-bg);
+    display:inline-block;padding:4px 9px;border-radius:7px;font-weight:600}
+  .arrow{align-self:center;color:var(--muted);font-size:20px;margin:3px 0}
+  .final{background:var(--red-bg);border:1px solid var(--red);border-radius:12px;padding:14px 16px;margin-top:4px}
+  .final b{color:var(--red)}
+  .final ul{margin:8px 0 0;padding-left:20px;font-size:13.5px}
+  .final li{margin:3px 0}
+  .safe{background:var(--green-bg);border:1px solid var(--green);border-radius:12px;padding:14px 16px;margin-top:18px}
+  .safe b{color:var(--green)}
+  .safe ul{margin:8px 0 0;padding-left:20px;font-size:13.5px}
+  footer{color:var(--muted);font-size:11.5px;text-align:center;margin:22px 0 6px}
+  @media print{body{background:#fff}.sim{position:static}.step,.client{box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="sim">
+    <span class="ic">&#9888;</span>
+    <div>SIMULAZIONE DIDATTICA &mdash; questa NON &egrave; una vera email di Google
+      <small>Esempio per il corso di Cybersecurity. Mittente e domini sono inventati (TLD <code>.example</code>, non raggiungibili). Non seguire alcuna istruzione: &egrave; il modello di una truffa.</small>
+    </div>
+  </div>
+
+  <!-- ===== Gmail-style reading pane ===== -->
+  <div class="client" role="img" aria-label="Simulazione dell'email come apparirebbe in un client di posta stile Gmail">
+    <div class="topbar">
+      <div class="logo">
+        <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
+          <rect x="1" y="1" width="24" height="18" rx="3" fill="#fff" stroke="#dadce0"/>
+          <path d="M2 3 L13 11 L24 3" fill="none" stroke="#ea4335" stroke-width="2"/>
+          <path d="M1 4 V17 H5 V7 L13 13 L21 7 V17 H25 V4" fill="none" stroke="#4285f4" stroke-width="1.5" opacity=".5"/>
+        </svg>
+        <span>Gmail <span style="font-size:12px">(simulazione)</span></span>
+      </div>
+      <div class="search">Cerca nella posta</div>
+      <div class="avatar">S</div>
+    </div>
+
+    <div class="subject">
+      Avviso di sicurezza critico: nuovo accesso al tuo Account Google
+      <span class="badge-spam">&#9888; sospetta</span>
+    </div>
+
+    <div class="from">
+      <div class="g">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M22 12c0-.6 0-1.2-.1-1.8H12v3.6h5.6a4.8 4.8 0 0 1-2 3.1v2.6h3.3C20.8 17.8 22 15.2 22 12z"/><path fill="#34a853" d="M12 22c2.7 0 5-1 6.6-2.5l-3.3-2.6c-.9.6-2 1-3.3 1-2.6 0-4.8-1.7-5.5-4.1H3.1v2.6A10 10 0 0 0 12 22z"/><path fill="#fbbc05" d="M6.5 13.8a6 6 0 0 1 0-3.6V7.6H3.1a10 10 0 0 0 0 8.8z"/><path fill="#ea4335" d="M12 6.4c1.5 0 2.8.5 3.8 1.5l2.9-2.9A10 10 0 0 0 3.1 7.6l3.4 2.6C7.2 8 9.4 6.4 12 6.4z"/></svg>
+      </div>
+      <div class="meta">
+        <div class="name">Google
+          <span class="flag" tabindex="0">(?)<span class="tip">Nome visualizzato falso: l'indirizzo reale non &egrave; google.com</span></span>
+        </div>
+        <div class="addr">&lt;no-reply@<span class="flag" tabindex="0" style="border-color:var(--red)">accounts-google-security.example<span class="tip">Dominio-sosia: contiene la parola "google" ma NON &egrave; google.com</span></span>&gt;</div>
+        <div class="to">a sergio.hanganu@gmial.com &nbsp;&middot;&nbsp; <span class="flag" tabindex="0">Rispondi a: support@secure-mail-verify.example<span class="tip">Reply-To su un dominio diverso: le risposte vanno al truffatore</span></span></div>
+      </div>
+    </div>
+
+    <div class="body">
+      <p>Gentile utente,</p>
+      <p>abbiamo rilevato un <strong>nuovo accesso</strong> al tuo Account Google da un dispositivo Windows a <em>Kiev (Ucraina)</em> che non riconosciamo. Per tua sicurezza abbiamo temporaneamente sospeso alcune funzioni dell'account.</p>
+      <p>Oltre <strong>1,8 miliardi di utenti</strong> si affidano a Google per proteggere i propri dati: fai anche tu la scelta giusta e conferma subito la tua identit&agrave;.</p>
+      <p style="color:var(--red);font-weight:600">ATTENZIONE: se non verifichi l'accesso entro 2 ore, l'account verr&agrave; bloccato in via definitiva e perderai email, foto e documenti su Drive.</p>
+      <p><a class="cta" href="#" onclick="return false">Proteggi il mio account</a></p>
+      <div class="urlbar">&#128279; Il link dice: https://myaccount.google.com/security &nbsp;&rarr;&nbsp; <b>ma punta a: https://accounts-google-security.example/verify?u=sergio&amp;id=90f1a2</b></div>
+      <p style="margin-top:14px">Dovrai confermare email, <strong>password attuale</strong> e il <strong>codice di verifica a 6 cifre</strong> che riceverai via SMS.</p>
+      <p class="sig">Grazie per aiutarci a mantenere sicuro il tuo account.<br>Il Team di Sicurezza di Google</p>
+      <div class="fine">&copy; 2026 Google LLC &middot; Questo &egrave; un messaggio automatico, non rispondere.</div>
+    </div>
+  </div>
+
+  <!-- ===== quick red flags ===== -->
+  <h2>Perch&eacute; insospettirsi (passa il mouse sui punti nell'email)</h2>
+  <p class="lead">Quattro indizi visibili senza aprire nulla.</p>
+  <div class="flags">
+    <div class="fcard"><b>Mittente</b>Nome "Google" ma dominio <code>accounts-google-security.example</code>: non &egrave; google.com.</div>
+    <div class="fcard"><b>Link ingannevole</b>Il testo mostra un URL ufficiale, la destinazione reale &egrave; un altro dominio.</div>
+    <div class="fcard"><b>Richiesta di credenziali</b>Chiede password e codice 2FA: Google non lo fa mai via email.</div>
+    <div class="fcard y"><b>Pressione psicologica</b>Urgenza (2 ore), paura di perdere tutto, "lo fanno tutti": leve di Cialdini.</div>
+  </div>
+
+  <!-- ===== risk flow ===== -->
+  <h2>Cosa succede se segui le istruzioni della mail</h2>
+  <p class="lead">La catena del danno, passo per passo.</p>
+  <div class="flow">
+    <div class="step"><div class="n">1</div><div>
+      <h3>Clicchi &ldquo;Proteggi il mio account&rdquo;</h3>
+      <p>Il browser non apre google.com ma una <strong>pagina-clone</strong> ospitata sul dominio del truffatore, graficamente identica al login Google.</p>
+      <span class="risk">Rischio: ti trovi su un sito controllato dall'attaccante</span>
+    </div></div>
+    <div class="arrow">&#8595;</div>
+    <div class="step"><div class="n">2</div><div>
+      <h3>Inserisci email e password</h3>
+      <p>Tutto ci&ograve; che digiti viene inviato <strong>in tempo reale</strong> all'attaccante mentre la pagina finge di &ldquo;verificare&rdquo;.</p>
+      <span class="risk">Rischio: le credenziali sono rubate nell'istante stesso</span>
+    </div></div>
+    <div class="arrow">&#8595;</div>
+    <div class="step"><div class="n">3</div><div>
+      <h3>Inserisci il codice a 6 cifre (2FA)</h3>
+      <p>L'attaccante prende il codice e lo usa entro pochi secondi sul vero sito Google: <strong>la verifica in due passaggi viene aggirata</strong>.</p>
+      <span class="risk">Rischio: nemmeno la 2FA ti protegge pi&ugrave;</span>
+    </div></div>
+    <div class="arrow">&#8595;</div>
+    <div class="step"><div class="n">4</div><div>
+      <h3>(Se presente) apri l'allegato</h3>
+      <p>Un file eseguibile mascherato da PDF pu&ograve; installare <strong>malware, spyware o ransomware</strong> sul dispositivo.</p>
+      <span class="risk">Rischio: dispositivo infetto, dati cifrati o spiati</span>
+    </div></div>
+  </div>
+
+  <div class="final">
+    <b>&#128165; Risultato: account compromesso.</b> Con l'accesso ottenuto l'attaccante pu&ograve;:
+    <ul>
+      <li>leggere e inviare email a tuo nome (anche verso i tuoi contatti e l'ateneo);</li>
+      <li>usare il &ldquo;password dimenticata&rdquo; per entrare in <strong>altri servizi</strong> collegati alla stessa casella (banca, social, portale esami);</li>
+      <li>accedere a Drive, foto e documenti e scaricarli o cifrarli per un riscatto;</li>
+      <li>cambiare la password e il recupero, <strong>chiudendoti fuori</strong> dal tuo stesso account;</li>
+      <li>usare la tua identit&agrave; per truffare altre persone (frode a catena).</li>
+    </ul>
+  </div>
+
+  <div class="safe">
+    <b>&#10003; La reazione corretta</b>
+    <ul>
+      <li>Non cliccare, non rispondere, non aprire allegati.</li>
+      <li>Verifica tu: apri il servizio digitando l'indirizzo a mano o da un segnalibro, mai dal link dell'email.</li>
+      <li>Segnala con &ldquo;Segnala phishing&rdquo; del client e avvisa il servizio IT / CERT di ateneo.</li>
+      <li>Se hai gi&agrave; inserito dati: cambia subito la password da un canale sicuro, revoca le sessioni attive e riconfigura la 2FA; valuta chiavi di sicurezza o passkey.</li>
+    </ul>
+  </div>
+
+  <footer>Materiale didattico &middot; campione simulato per esercitazione &middot; nessuna email reale &egrave; stata inviata o falsificata.</footer>
+</div>
+</body>
+</html>
